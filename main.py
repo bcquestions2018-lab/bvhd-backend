@@ -40,8 +40,8 @@ async def analyze(request: Request):
                 file = value
                 break
 if file is None:
-    keys = list(form.keys())
-    return JSONResponse(content={"loi": True, "phan_tich": f"Fields nhận được: {keys}"})
+    keys = str(list(form.keys()))
+    return JSONResponse(content={"loi": True, "phan_tich": "Fields: " + keys})
         image_bytes = await file.read()
         if len(image_bytes) == 0:
             return JSONResponse(content={"loi": True, "phan_tich": "File rong"})
