@@ -32,22 +32,25 @@ def health():
 @app.post("/analyze")
 async def analyze(request: Request):
     try:
-        form = await request.form()
-        file = None
-        for key in form:
-            value = form[key]
-            if hasattr(value, "read"):
-                file = value
-                break
-        if file is None:
-            keys = str(list(form.keys()))
-            return JSONResponse(content={"loi": True, "phan_tich": "Fields: " + keys})
-        image_bytes = await file.read()
-        if len(image_bytes) == 0:
-            return JSONResponse(content={"loi": True, "phan_tich": "File rong"})
+        # Thử đọc raw binary trước
+        image_bytes = await request.body()
+
+        # Nếu không có, thử đọc form
+        if not image_bytes:
+            form = await request.form()
+            for key in form:
+                value = form[key]
+                if hasattr(value, "read"):
+                    image_bytes = await value.read()
+                    break
+
+        if not image_bytes or len(image_bytes) == 0:
+            return JSONResponse(content={"loi": True, "phan_tich": "Khong nhan duoc anh"})
+
         logger.info(f"Nhan anh: {len(image_bytes)//1024} KB")
         result = await analyze_screenshot(image_bytes)
         return JSONResponse(content=result)
+
     except Exception as e:
         logger.error(f"Loi: {e}")
         return JSONResponse(content={"loi": True, "phan_tich": str(e)})
