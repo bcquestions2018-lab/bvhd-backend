@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
@@ -17,8 +17,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp"}
-
 @app.get("/")
 def root():
     return {
@@ -34,19 +32,33 @@ def health():
 
 @app.post("/analyze")
 async def analyze(request: Request):
-    form = await request.form()
-    # Lấy file từ bất kỳ field nào
-    file = None
-    for key in form:
-        value = form[key]
-        if hasattr(value, 'read'):
-            file = value
-            break
-    if file is None:
-        raise HTTPException(status_code=400, detail="Khong tim thay file anh")
-    image_bytes = await file.read()
-    result = await analyze_screenshot(image_bytes)
-    return JSONResponse(content=result)
+    try:
+        form = await request.form()
+        # Nhận file từ bất kỳ field nào
+        file = None
+        for key in form:
+            value = form[key]
+            if hasattr(value, 'read'):
+                file = value
+                break
+
+        if file is None:
+            raise HTTPException(status_code=400, detail="Khong tim thay file anh")
+
+        image_bytes = await file.read()
+
+        if len(image_bytes) == 0:
+            raise HTTPException(status_code=400, detail="File rong")
+
+        logger.info(f"Nhan anh: {len(image_bytes)//1024} KB")
+        result = await analyze_screenshot(image_bytes)
+        return JSONResponse(content=result)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Loi: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
     uvicorn.run("main:app", host="0.0.0.0", port=8000)
