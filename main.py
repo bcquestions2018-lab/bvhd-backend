@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import logging
@@ -39,9 +39,9 @@ async def analyze(request: Request):
             if hasattr(value, "read"):
                 file = value
                 break
-if file is None:
-    keys = str(list(form.keys()))
-    return JSONResponse(content={"loi": True, "phan_tich": "Fields: " + keys})
+        if file is None:
+            keys = str(list(form.keys()))
+            return JSONResponse(content={"loi": True, "phan_tich": "Fields: " + keys})
         image_bytes = await file.read()
         if len(image_bytes) == 0:
             return JSONResponse(content={"loi": True, "phan_tich": "File rong"})
