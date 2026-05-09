@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
@@ -33,13 +33,18 @@ def health():
     return {"status": "healthy"}
 
 @app.post("/analyze")
-async def analyze(file: UploadFile = File(...)):
-    if file.content_type not in ALLOWED_TYPES:
-        raise HTTPException(status_code=400, detail="Chi chap nhan JPG, PNG, WEBP.")
+async def analyze(request: Request):
+    form = await request.form()
+    # Lấy file từ bất kỳ field nào
+    file = None
+    for key in form:
+        value = form[key]
+        if hasattr(value, 'read'):
+            file = value
+            break
+    if file is None:
+        raise HTTPException(status_code=400, detail="Khong tim thay file anh")
     image_bytes = await file.read()
-    if len(image_bytes) == 0:
-        raise HTTPException(status_code=400, detail="File rong.")
-    logger.info(f"Nhan anh: {file.filename} ({len(image_bytes)//1024} KB)")
     result = await analyze_screenshot(image_bytes)
     return JSONResponse(content=result)
 
